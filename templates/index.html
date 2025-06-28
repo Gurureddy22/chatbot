@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart AI Chatbot</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background: linear-gradient(135deg, rgb(173, 207, 230), rgb(138, 43, 226)); /* Soft Blue to Purple */
+            color: white;
+            transition: 0.3s ease-in-out;
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 10px;
+            border-radius: 50%;
+            background: white;
+            color: black;
+        }
+
+        #chatbox {
+            width: 50%;
+            margin: auto;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.95); /* White with Transparency */
+            padding: 15px;
+            height: 400px;
+            overflow-y: auto;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            color: black;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message {
+            padding: 10px;
+            border-radius: 10px;
+            margin: 5px;
+            max-width: 70%;
+            animation: fadeIn 0.3s ease-in-out;
+            position: relative;
+        }
+
+        .user {
+            align-self: flex-end;
+            background: #6e8efb;
+            color: white;
+        }
+
+        .bot {
+            align-self: flex-start;
+            background: #f1f1f1;
+            color: black;
+            display: flex;
+            align-items: center;
+        }
+
+        .bot-avatar {
+            width: 30px;
+            height: 30px;
+            margin-right: 10px;
+            border-radius: 50%;
+            background: #6e8efb;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .timestamp {
+            font-size: 10px;
+            color: gray;
+            position: absolute;
+            bottom: -15px;
+            right: 5px;
+        }
+
+        #controls {
+            margin-top: 10px;
+        }
+
+        #userInput {
+            width: 45%;
+            padding: 10px;
+            border-radius: 20px;
+            border: none;
+            outline: none;
+            font-size: 16px;
+        }
+
+        button {
+            padding: 10px;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            border-radius: 20px;
+            transition: 0.3s ease-in-out;
+        }
+
+        #micButton {
+            background: #ff5c5c;
+            color: white;
+            border-radius: 50%;
+            padding: 12px;
+            font-size: 18px;
+            transition: 0.3s ease-in-out;
+        }
+
+        #micButton:hover {
+            background: #ff2e2e;
+            transform: scale(1.1);
+        }
+
+        #sendButton {
+            background: #4caf50;
+            color: white;
+            padding: 10px 15px;
+        }
+
+        #sendButton:hover {
+            background: #45a049;
+            transform: scale(1.1);
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .typing {
+            font-size: 12px;
+            font-style: italic;
+            color: gray;
+            margin: 5px;
+        }
+
+        .quick-replies {
+            display: flex;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .quick-replies button {
+            margin: 5px;
+            padding: 8px 15px;
+            background: #007bff;
+            color: white;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+    <h2>🤖 Smart AI Chatbot</h2>
+
+    <label for="language">🌍 Select Language:</label>
+    <select id="language">
+        <option value="en">English</option>
+        <option value="es">Spanish</option>
+        <option value="fr">French</option>
+        <option value="de">German</option>
+        <option value="hi">Hindi</option>
+        <option value="te">Telugu</option>
+    </select>
+
+    <div id="chatbox"></div>
+
+    <div class="quick-replies">
+        <button onclick="sendQuickMessage('I need customer support')">📞 Customer Support</button>
+        <button onclick="sendQuickMessage('How to track my order?')">🚚 Track Order</button>
+        <button onclick="sendQuickMessage('I want a refund')">💰 Refund</button>
+    </div>
+
+    <div id="controls">
+        <button id="micButton" onclick="startSpeechRecognition()">🎙</button>
+        <input type="text" id="userInput" placeholder="Type a message..." onkeypress="handleKeyPress(event)">
+        <button id="sendButton" onclick="sendMessage()">Enter</button>
+        <label for="fileInput">📂</label>
+        <input type="file" id="fileInput" onchange="uploadFile()">
+    </div>
+
+    <script>
+        function handleKeyPress(event) {
+            if (event.key === "Enter") {
+                sendMessage();
+            }
+        }
+
+        function sendMessage() {
+            let userText = document.getElementById("userInput").value;
+            let chatbox = document.getElementById("chatbox");
+            let selectedLang = document.getElementById("language").value;  // 👈 GET the selected language
+        
+            if (!userText.trim()) return;
+        
+            let userMessage = `<p class='message user'><strong>You:</strong> ${userText}</p>`;
+            chatbox.innerHTML += userMessage;
+            document.getElementById("userInput").value = "";
+        
+            let typingIndicator = document.createElement("p");
+            typingIndicator.className = "typing";
+            typingIndicator.textContent = "Bot is typing...";
+            chatbox.appendChild(typingIndicator);
+        
+            fetch("/chat", {
+                method: "POST",
+                body: JSON.stringify({ message: userText, language: selectedLang }), // 👈 Pass language to backend
+                headers: { "Content-Type": "application/json" }
+            })
+            .then(response => response.json())
+            .then(data => {
+                chatbox.removeChild(typingIndicator);
+                let botMessage = `
+                    <p class='message bot'>
+                        <span class='bot-avatar'>🤖</span> 
+                        <strong>Bot:</strong> ${data.response}
+                    </p>`;
+                chatbox.innerHTML += botMessage;
+                speakResponse(data.response);
+                chatbox.scrollTop = chatbox.scrollHeight;
+            });
+        }
+        
+        function sendQuickMessage(text) {
+            document.getElementById("userInput").value = text;
+            sendMessage();
+        }
+
+        function startSpeechRecognition() {
+            let recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            recognition.start();
+
+            recognition.onresult = function(event) {
+                document.getElementById("userInput").value = event.results[0][0].transcript;
+                sendMessage();
+            };
+        }
+    </script>
+</body>
+</html>
